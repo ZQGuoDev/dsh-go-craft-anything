@@ -38,14 +38,14 @@
 
 ## 快速安装
 
-本移动分支的发布仓库为 [qingyunqingtong/dsh-go-craft-anything](https://github.com/qingyunqingtong/dsh-go-craft-anything)。以下命令面向 dsh-go 的 Ubuntu 本机引擎。
+本移动分支的发布仓库为 [ZQGuoDev/dsh-go-craft-anything](https://github.com/ZQGuoDev/dsh-go-craft-anything)。以下命令面向 dsh-go 的 Ubuntu 本机引擎。
 
 ### 方式一：克隆到保留目录（推荐）
 
 ```bash
 PLUGIN_DIR="${DSH_HOME:-$HOME/.dsh}/dsh-go/plugins/local-craft-anything"
 mkdir -p "$(dirname "$PLUGIN_DIR")"
-git clone https://github.com/qingyunqingtong/dsh-go-craft-anything.git "$PLUGIN_DIR"
+git clone https://github.com/ZQGuoDev/dsh-go-craft-anything.git "$PLUGIN_DIR"
 dsh plugin --profile web add "$PLUGIN_DIR"
 ```
 
@@ -58,7 +58,7 @@ dsh plugin --profile web add "$PLUGIN_DIR"
 仓库和标签实际发布后，可以使用：
 
 ```bash
-dsh plugin --profile web add github:qingyunqingtong/dsh-go-craft-anything#v0.6.1-mobile.1
+dsh plugin --profile web add github:ZQGuoDev/dsh-go-craft-anything#v0.6.1-mobile.1
 ```
 
 此命令使用 dsh 转发到 pnpm 的 GitHub 包安装能力。本地路径安装已有实机部署记录；发布端还会核对固定标签及包内容。手机使用 `--profile web`。

@@ -14,7 +14,7 @@
 ### 安装
 
 ```bash
-dsh plugin --profile web add github:qingyunqingtong/dsh-go-craft-anything#v0.6.1-mobile.1
+dsh plugin --profile web add github:ZQGuoDev/dsh-go-craft-anything#v0.6.1-mobile.1
 ```
 
 也可按 README 将源码克隆到 Ubuntu 的保留目录，再使用本地路径安装。需要时在 App「引擎」页重启。

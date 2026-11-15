@@ -21,7 +21,7 @@
 - 补充隐私忽略规则和 GitHub issue 模板；收录本机 Ghidra ARM64 native 构建命令。
 - 旧 PowerShell 发布脚本增加默认禁用保护，避免误发到上游。
 
-手机适配及文档按 MIT 提供。移动分支发布者为 [qingyunqingtong](https://github.com/qingyunqingtong)，仓库为 [dsh-go-craft-anything](https://github.com/qingyunqingtong/dsh-go-craft-anything)。保留上游作者 fanqi 的归属和 MIT 版权声明。
+手机适配及文档按 MIT 提供。移动分支发布者为 [ZQGuoDev](https://github.com/ZQGuoDev)，仓库为 [dsh-go-craft-anything](https://github.com/ZQGuoDev/dsh-go-craft-anything)。保留上游作者 fanqi 的归属和 MIT 版权声明。
 
 ## 外部程序
 

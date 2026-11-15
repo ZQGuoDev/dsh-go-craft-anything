@@ -33,7 +33,7 @@ apt-get install -y git curl ca-certificates tar unzip
 ```bash
 PLUGIN_DIR="${DSH_HOME:-$HOME/.dsh}/dsh-go/plugins/local-craft-anything"
 mkdir -p "$(dirname "$PLUGIN_DIR")"
-git clone https://github.com/qingyunqingtong/dsh-go-craft-anything.git "$PLUGIN_DIR"
+git clone https://github.com/ZQGuoDev/dsh-go-craft-anything.git "$PLUGIN_DIR"
 git -C "$PLUGIN_DIR" checkout v0.6.1-mobile.1
 dsh plugin --profile web add "$PLUGIN_DIR"
 ```
@@ -45,7 +45,7 @@ dsh plugin --profile web add "$PLUGIN_DIR"
 ### GitHub 包地址
 
 ```bash
-dsh plugin --profile web add github:qingyunqingtong/dsh-go-craft-anything#v0.6.1-mobile.1
+dsh plugin --profile web add github:ZQGuoDev/dsh-go-craft-anything#v0.6.1-mobile.1
 ```
 
 需要 Git、pnpm 可访问 GitHub。此路径与本地克隆方式二选一，不要重复装两份相同插件。
