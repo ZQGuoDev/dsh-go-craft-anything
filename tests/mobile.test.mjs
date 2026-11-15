@@ -23,6 +23,8 @@ function harness(overrides = {}) {
     writeBridge: (_config, patch) => { writes.push(patch); Object.assign(bridge.bridge, patch) },
     statusReport: async (_config, options) => { probeCalls.push(options); return { installed: false, mode: currentMode } },
     setMode: async (_config, wanted) => { await Promise.resolve(); currentMode = wanted; return { applied: true } },
+    inspectEnvironment: async () => ({ checks: [] }),
+    deploymentSnapshot: () => null,
     ...overrides,
   })
   return { on, panel: panels.get('craft-status'), strips, writes, probeCalls, dispose: () => { dispose(); fs.rmSync(dir, { recursive: true, force: true }) } }
@@ -35,7 +37,8 @@ test('manifest stays inside native contribution and localization limits', () => 
   const c = manifest.contributes
   assert.equal(c['composer.actions'].length, 2)
   assert.equal(c['composer.strip'].length, 1)
-  assert.equal(c.panels.length, 1)
+  assert.equal(c.panels.length, 2)
+  assert.equal(c.panels[1].id, 'craft-setup')
   assert.equal(c['composer.actions'][1].effect.page, 'panel:craft-status')
   const ids = Object.values(c).flat().map((x) => x.id)
   assert.equal(new Set(ids).size, ids.length)

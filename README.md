@@ -2,7 +2,7 @@
 
 给 **dsh-go 手机 App** 使用的 Craft Anything 原生插件：在聊天输入框上方打开 Craft 面板，查看本机 CLI、引擎和 MCP 状态，切换净室 / 深度模式，控制工具白名单，并让 AI 调用本地 Craft CLI。
 
-本发布候选版本：**0.6.1-mobile.1**。npm 包名与卸载名：**local-craft-anything**。
+当前发布版本：**0.6.1-mobile.2**。npm 包名与卸载名：**local-craft-anything**。
 
 基于 [Fanqi89/dsh-craft-anything](https://github.com/Fanqi89/dsh-craft-anything) 0.6.1（MIT）适配；参考镜像为 [hbsyzstq/dsh-craft-anything](https://github.com/hbsyzstq/dsh-craft-anything)。分析引擎来自 [storytold/craft-anything](https://github.com/storytold/craft-anything)，需要另外安装。本项目是社区手机适配，与上述项目没有官方隶属关系。
 
@@ -18,6 +18,7 @@
 | 加号工具中的 Craft | 支持该插槽的 App 上提供快捷入口 |
 | 对话详情 / 全部功能 | 打开同一个 Craft 状态面板 |
 | 刷新状态 / 完整检测 | 普通刷新复用缓存；完整检测重跑版本与能力探针 |
+| 环境依赖 / 部署 | 加载后自动检查；生成缺失清单，确认后一键部署，复用已有环境 |
 | 开桥 / 关桥 | 控制 `mcp__craft__*` 工具是否对 AI 可见 |
 | 仅核心 / 全部工具 | 设置 MCP 工具白名单；不改变桥开关 |
 | 复制常用命令 | 复制工具调用提示，由用户粘贴到对话再发送 |
@@ -55,10 +56,10 @@ dsh plugin --profile web add "$PLUGIN_DIR"
 
 ### 方式二：安装固定 GitHub 标签
 
-仓库和标签实际发布后，可以使用：
+固定标签安装包含自动环境检测与确认式依赖部署：
 
 ```bash
-dsh plugin --profile web add github:ZQGuoDev/dsh-go-craft-anything#v0.6.1-mobile.1
+dsh plugin --profile web add github:ZQGuoDev/dsh-go-craft-anything#v0.6.1-mobile.2
 ```
 
 此命令使用 dsh 转发到 pnpm 的 GitHub 包安装能力。本地路径安装已有实机部署记录；发布端还会核对固定标签及包内容。手机使用 `--profile web`。
@@ -67,9 +68,17 @@ dsh plugin --profile web add github:ZQGuoDev/dsh-go-craft-anything#v0.6.1-mobile
 
 解压后，将含本仓库 `package.json` 的目录复制到 `${DSH_HOME:-$HOME/.dsh}/dsh-go/plugins/local-craft-anything`，然后执行上面的本地 `add` 命令。不要把整个源码 zip 当作 APK 安装，也不要把 zip 文件名当作本地插件目录。
 
-## 安装 Craft CLI
+## 自动检测与一键部署
 
-在 dsh-go 对话里发送：
+安装插件并加载引擎后，会自动执行本机依赖检测。打开「Craft 面板 → 环境依赖 / 部署」（也可在全部功能打开「Craft 环境部署」），查看哪些依赖可复用、缺少或需要手动配置。
+
+点「一键部署」生成实际缺失的自动安装清单，再点「确认部署」。已有可用依赖自动跳过，执行前还会复查；点「暂不部署」不安装。确认清单 5 分钟内有效，重新检测会使旧清单失效。长任务在本机后台串行运行，面板持续显示进度，关闭面板不取消已确认的任务；重启引擎会中断任务，之后重新检测再部署。
+
+首次加载只做检测，不在 npm / pnpm 安装脚本中弹出交互或下载系统软件。Node、DSH 等插件运行前置环境仍需由宿主提供。编码智能体检测不等于已登录或模型配置完成；Ubuntu/proot 的 Chromium、ARM64 Ghidra 等无法自动保证兼容的项会提示手动处理，见[依赖说明](docs/DEPENDENCIES.md)。
+
+## 手动安装 Craft CLI
+
+也可以在 dsh-go 对话里发送：
 
 ```text
 请调用 craft_install，安装 v0.6.1 的官方 Craft CLI；然后调用 craft_status，refresh=true，并执行 craft_cli 的 doctor 检查。
@@ -134,7 +143,7 @@ node scripts/install-cli.mjs --version v0.6.1
 
 本机已有部署记录：Android / Ubuntu 24.04 proot / ARM64、官方 Craft CLI 0.6.1、真实 MCP 握手、最小网页 rebuild，以及 Ghidra 12.2 headless 与 Craft 反编译集成。相关依赖是本机后来单独安装的，**不会因为别人装了这个插件就自动拥有同样环境**。
 
-本次发布副本的检查结果和验证范围见 [验证记录](docs/VERIFICATION.md)。手机面板没有移植桌面网页的依赖一键补齐、插件更新和自动重启按钮；其内部文案目前以中文为主，清单部分入口提供中英文名称。没有宣称已上架插件市场，也没有沿用上游的市场收录徽章。
+本次发布副本的检查结果和验证范围见 [验证记录](docs/VERIFICATION.md)。手机面板已增加确认式依赖部署，未提供插件更新和自动重启按钮；其内部文案目前以中文为主，清单部分入口提供中英文名称。没有宣称已上架插件市场，也没有沿用上游的市场收录徽章。
 
 Chromium、ADB、JADX、调试器、桌面 UI 和所有手机型号的兼容性需要单独验证。Ghidra ARM64 安装有额外本机组件要求，见 [依赖说明](docs/DEPENDENCIES.md)。
 

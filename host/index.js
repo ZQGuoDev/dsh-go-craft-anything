@@ -199,6 +199,10 @@ async function setMode(config, mode, options = {}) {
 function run(command, args, options = {}) {
   const { cwd, timeoutMs = 120_000, signal, env, shell, verbatim } = options
   return new Promise((resolve) => {
+    if (signal?.aborted) {
+      resolve({ code: null, stdout: '', stderr: 'cancelled', timedOut: false, error: 'cancelled', ms: 0 })
+      return
+    }
     const started = Date.now()
     let stdout = ''
     let stderr = ''
@@ -245,7 +249,7 @@ function run(command, args, options = {}) {
       if (timer) clearTimeout(timer)
       if (signal) signal.removeEventListener('abort', onAbort)
       resolve({
-        code: code ?? (timedOut ? null : 0),
+        code: code ?? null,
         stdout: stdout.slice(0, MAX_CAPTURE),
         stderr: stderr.slice(0, MAX_CAPTURE),
         timedOut,
@@ -256,7 +260,7 @@ function run(command, args, options = {}) {
     child.stdout.on('data', (chunk) => { stdout += chunk.toString() })
     child.stderr.on('data', (chunk) => { stderr += chunk.toString() })
     child.on('error', (error) => finish(null, String(error?.message || error)))
-    child.on('close', (code) => finish(code))
+    child.on('close', (code, exitSignal) => finish(code, exitSignal ? `process exited on ${exitSignal}` : undefined))
   })
 }
 
@@ -1062,18 +1066,115 @@ function invalidateProbes() {
   whichCache.clear()
 }
 
-const envJobs = new Map()
+// Native setup reuses the bounded installers below. Its inspection probes never write
+// env.json, register engines, or download anything.
+function checkInspectionSignal(signal) {
+  if (signal?.aborted) throw Object.assign(new Error('环境检测已取消'), { name: 'AbortError' })
+}
 
-function envJobsSnapshot() {
-  return [...envJobs.values()].map((job) => ({
-    id: job.id,
-    status: job.status,
-    startedAt: job.startedAt,
-    updatedAt: job.updatedAt,
-    detail: job.detail || '',
-    error: job.error || null,
-    log: job.log.slice(-30).join('\n'),
-  }))
+function environmentCommands(config, names, extras = []) {
+  const env = envForChild(config)
+  const extensions = IS_WINDOWS ? ['', '.exe', '.cmd', '.bat'] : ['']
+  const dirs = String(env.PATH || '').split(path.delimiter).filter(Boolean)
+  return [...new Set([...extras.filter(Boolean), ...names.flatMap((name) => dirs.flatMap((dir) => extensions.map((ext) => path.join(dir, name + ext))))])].filter(existsFile)
+}
+
+async function environmentVersion(config, candidates, args, pattern, signal, accept = () => true) {
+  const failures = []
+  for (const command of candidates) {
+    checkInspectionSignal(signal)
+    const result = await run(command, args, { timeoutMs: 3500, signal, env: envForChild(config), shell: IS_WINDOWS && /\.(cmd|bat)$/i.test(command) })
+    checkInspectionSignal(signal)
+    const output = [result.stdout, result.stderr].filter(Boolean).join('\n').trim()
+    if (result.code === 0 && !result.error && !result.timedOut && pattern.test(output) && accept(output)) {
+      return { command, detail: `${command}: ${output.split(/\r?\n/)[0].slice(0, 240)}` }
+    }
+    failures.push(`${command}: ${result.error || (result.timedOut ? '检测超时' : output.slice(0, 180) || '无法运行或版本不兼容')}`)
+  }
+  return { detail: failures.slice(0, 3).join('; ') || '未发现可运行的程序' }
+}
+
+async function inspectHostEnvironment(config = {}, { signal } = {}) {
+  checkInspectionSignal(signal)
+  const env = envForChild(config)
+  const resolved = resolveCli(config)
+  const checks = []
+  const add = (id, label, probe, auto, extra = '') => checks.push({ id, label, state: probe.command ? 'ok' : auto ? 'missing' : 'manual', auto, detail: probe.command ? probe.detail : [probe.detail, extra].filter(Boolean).join('；').slice(0, 800) })
+  const cli = await environmentVersion(config, environmentCommands(config, ['craft-anything-cli'], [resolved.cli]), ['--version'], /\d+\.\d+(?:\.\d+)?/, signal)
+  add('cli', 'Craft Anything CLI', cli, true)
+  const agent = await environmentVersion(config, environmentCommands(config, ['dsh', 'codex', 'claude', 'aider', 'gemini', 'opencode']), ['--version'], /\d+\.\d+(?:\.\d+)?/, signal)
+  add('coding-agent', '编码智能体（DSH / Codex / Claude 等）', agent, Boolean(environmentCommands(config, ['npm', 'pnpm']).length), '需要先安装 npm 或 pnpm；登录状态需由对应智能体确认')
+  const javaRoots = [env.JAVA_HOME, ...listDirs('/usr/lib/jvm').map((name) => path.join('/usr/lib/jvm', name)), ...listDirs(path.join(installRoot(config), 'tools')).filter((name) => /jdk|java/i.test(name)).map((name) => path.join(installRoot(config), 'tools', name))]
+  if (IS_WINDOWS) for (const base of [path.join(env.ProgramFiles || 'C:\\Program Files', 'Java'), path.join(env.ProgramFiles || 'C:\\Program Files', 'Eclipse Adoptium')]) javaRoots.push(...listDirs(base).map((name) => path.join(base, name)))
+  if (process.platform === 'darwin') javaRoots.push(...listDirs('/Library/Java/JavaVirtualMachines').map((name) => path.join('/Library/Java/JavaVirtualMachines', name, 'Contents', 'Home')))
+  const packageManager = environmentCommands(config, IS_WINDOWS ? ['winget'] : process.platform === 'darwin' ? ['brew'] : ['apt-get']).length > 0
+  const java = await environmentVersion(config, environmentCommands(config, ['java'], javaRoots.filter(Boolean).map((root) => path.join(root, 'bin', IS_WINDOWS ? 'java.exe' : 'java'))), ['-version'], /(?:openjdk|java) version\s+"?(\d+)/i, signal, (output) => {
+    const match = /(?:openjdk|java) version\s+"?(\d+)(?:\.(\d+))?/i.exec(output)
+    return match && Number(match[1] === '1' ? match[2] : match[1]) >= 21
+  })
+  add('java', 'Java 21+', java, packageManager)
+  const gdb = await environmentVersion(config, environmentCommands(config, ['gdb'], IS_WINDOWS ? ['C:\\msys64\\ucrt64\\bin\\gdb.exe'] : []), ['--version'], /GNU gdb[^\n]*\d/i, signal)
+  add('gdb', 'GDB', gdb, packageManager)
+  let ubuntu = false
+  try { ubuntu = /(?:^|\n)ID=ubuntu(?:\n|$)/.test(fs.readFileSync('/etc/os-release', 'utf8')) } catch { /* no distribution metadata */ }
+  const proot = Boolean(env.PROOT_TMP_DIR || env.PROOT_DISTRO || existsFile('/etc/dsh-app/runtime.json') || fs.existsSync('/system/bin/app_process'))
+  const chromium = await environmentVersion(config, environmentCommands(config, ['chromium', 'chromium-browser', 'google-chrome', 'google-chrome-stable'], process.platform === 'darwin' ? ['/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'] : IS_WINDOWS ? [path.join(env.ProgramFiles || 'C:\\Program Files', 'Google', 'Chrome', 'Application', 'chrome.exe')] : []), ['--version'], /(?:Chromium|Google Chrome)\s+\d/i, signal)
+  add('chromium', 'Chromium 浏览器', chromium, packageManager && !(process.platform === 'linux' && (ubuntu || proot)), '当前 Ubuntu/proot 的 apt 安装器依赖 snap，需手动安装可运行的浏览器')
+  // engines_list is evidence of CLI detection, never sufficient evidence that a path runs.
+  let engines = []
+  if (cli.command) {
+    const result = await run(cli.command, ['engines_list', '--json', '{}'], { timeoutMs: 6000, signal, env })
+    checkInspectionSignal(signal)
+    if (result.code === 0 && !result.error) try { const data = JSON.parse(result.stdout); engines = (data.result || data).engines || [] } catch { /* unknown engine evidence */ }
+  }
+  const found = Array.isArray(engines) ? engines.find((item) => item?.id === 'ghidra')?.found : null
+  const ghidraRoots = [env.GHIDRA_INSTALL_DIR, typeof found === 'string' && existsFile(found) ? path.dirname(path.dirname(found)) : found, ...listDirs(path.join(installRoot(config), 'tools')).filter((name) => /ghidra/i.test(name)).map((name) => path.join(installRoot(config), 'tools', name))].filter((value) => typeof value === 'string')
+  const launchers = [...new Set(ghidraRoots.map(ghidraLauncherIn).filter(Boolean))]
+  let ghidra = { detail: found ? `CLI 检测到 ${String(found).slice(0, 200)}；尚未验证启动与原生反编译器` : '未发现已验证的 Ghidra 引擎' }
+  // Starting analyzeHeadless creates user preferences/logs. Inspect only invokes its
+  // native helper with closed stdin, and reports exactly the evidence obtained.
+  if (java.command) for (const launcher of launchers) {
+    const base = path.dirname(path.dirname(launcher))
+    const nativeDir = process.platform === 'linux' ? `linux_${process.arch === 'arm64' ? 'arm_64' : 'x86_64'}` : process.platform === 'darwin' ? `osx_${process.arch === 'arm64' ? 'arm_64' : 'x86_64'}` : 'win_x86_64'
+    const decompiler = path.join(base, 'Ghidra', 'Features', 'Decompiler', 'os', nativeDir, IS_WINDOWS ? 'decompile.exe' : 'decompile')
+    let minimumJava = 21
+    try {
+      const properties = fs.readFileSync(path.join(base, 'Ghidra', 'application.properties'), 'utf8')
+      const match = /^application\.java\.min=(\d+)/m.exec(properties)
+      if (match) minimumJava = Number(match[1])
+    } catch { /* minimum unknown: don't infer compatibility from a path */ }
+    const javaMajor = /version\s+"?(\d+)/i.exec(java.detail)?.[1]
+    if (Number(javaMajor) < minimumJava) { ghidra.detail += `；此版本要求 Java ${minimumJava}+`; continue }
+    if (found && existsFile(decompiler)) {
+      const native = await run(decompiler, [], { timeoutMs: 3500, signal, env })
+      checkInspectionSignal(signal)
+      if (native.code === 0 && !native.error && !native.timedOut) ghidra = { command: launcher, detail: `${launcher}：CLI 已检测、Java 21+ 和本机反编译器进程验证通过；未执行 headless 分析` }
+    }
+    if (ghidra.command) break
+  }
+  const armGhidra = process.platform === 'linux' && process.arch === 'arm64'
+  add('ghidra', 'Ghidra 原生反编译', ghidra, false, armGhidra ? 'Linux ARM64 需要匹配架构的原生组件，请手动构建/配置' : 'CLI 安装器还会下载 Java；请手动安装并验证后配置，避免增加未确认的依赖')
+  return { checks, platform: `${process.platform}-${process.arch}`, cliPath: cli.command || null }
+}
+
+export const environmentBackend = Object.freeze({
+  root: installRoot,
+  inspect: inspectHostEnvironment,
+  async install(config, id, job) {
+    if (id === 'cli') await installCliInto(config, job, { version: 'latest' })
+    else if (id === 'coding-agent') await installCodingAgentInto(config, job)
+    else if (['java', 'gdb', 'chromium'].includes(id)) await installPackageInto(config, job, id)
+    else throw new Error('此环境需要手动配置：' + id)
+    invalidateProbes()
+    invalidateEngines()
+  },
+})
+
+// Lazy import avoids a module initialization cycle with the native wrapper.
+async function envJobsSnapshot(config) {
+  const { deploymentSnapshot } = await import('../lib/environment.js')
+  const job = deploymentSnapshot(config)
+  return job ? [{ ...job, status: job.status === 'failed' ? 'error' : job.status }] : []
 }
 
 function jobLog(job, line) {
@@ -1092,34 +1193,6 @@ function jobDetail(job, detail) {
   job.updatedAt = new Date().toISOString()
 }
 
-function startEnvJob(config, id, runner) {
-  const existing = envJobs.get(id)
-  if (existing && existing.status === 'running') return existing
-  const job = {
-    id,
-    status: 'running',
-    startedAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    detail: '',
-    error: null,
-    log: [],
-  }
-  envJobs.set(id, job)
-  runner(job)
-    .then(() => {
-      job.status = 'done'
-      job.updatedAt = new Date().toISOString()
-      invalidateProbes()
-    })
-    .catch((error) => {
-      job.status = 'error'
-      job.error = String(error && error.message ? error.message : error).slice(0, 800)
-      job.updatedAt = new Date().toISOString()
-      jobLog(job, `error: ${job.error}`)
-      invalidateProbes()
-    })
-  return job
-}
 
 function manualCommandFor(id) {
   if (id === 'java') {
@@ -1228,7 +1301,7 @@ async function runCliInstaller(config, options = {}) {
 
 async function installCodingAgentInto(config, job) {
   const packageName = '@anthropic-ai/claude-code'
-  const npm = which('npm') || which('npm.cmd') || which('npm.exe')
+  const npm = environmentCommands(config, ['npm'])[0] || null
   // The Harness can run from Electron or from its own CLI; the bundled pnpm lives in the
   // installation directory either way, but process.execPath is not always that directory.
   const roots = []
@@ -1265,7 +1338,7 @@ async function installCodingAgentInto(config, job) {
     }
   }
   if (attempts.length === 0 && IS_WINDOWS) {
-    const winget = which('winget') || which('winget.exe')
+    const winget = environmentCommands(config, ['winget'])[0] || null
     if (winget) {
       attempts.push(async () => {
         await install(winget, ['install', '-e', '--id', 'OpenJS.NodeJS.LTS', '--accept-package-agreements', '--accept-source-agreements', '--disable-interactivity'], 'winget install Node.js LTS')
@@ -1308,7 +1381,7 @@ async function installPackageInto(config, job, id) {
     if (result.code !== 0) throw new Error(command + ' exited ' + result.code + ': ' + (result.stderr || result.stdout || '').trim().slice(0, 400))
   }
   if (IS_WINDOWS) {
-    const winget = which('winget') || which('winget.exe')
+    const winget = environmentCommands(config, ['winget'])[0] || null
     if (!winget) throw new Error('winget was not found on this machine; ' + manualCommandFor(id))
     if (id === 'gdb') {
       await managed(winget, ['install', '-e', '--id', 'MSYS2.MSYS2', '--accept-package-agreements', '--accept-source-agreements', '--disable-interactivity'])
@@ -1323,19 +1396,19 @@ async function installPackageInto(config, job, id) {
     return
   }
   if (process.platform === 'darwin') {
-    const brew = which('brew')
+    const brew = environmentCommands(config, ['brew'])[0] || null
     if (!brew) throw new Error('Homebrew was not found; ' + manualCommandFor(id))
     await managed(brew, spec.brew)
     if (id === 'gdb') jobLog(job, 'macOS also needs the binary to be codesigned before gdb can attach (see the manual command)')
     invalidateProbes()
     return
   }
-  const apt = which('apt-get')
+  const apt = environmentCommands(config, ['apt-get'])[0] || null
   if (!apt) throw new Error('apt-get was not found; ' + manualCommandFor(id))
   const root = typeof process.getuid === 'function' && process.getuid() === 0
   if (root) await managed(apt, ['install', '-y', spec.apt])
   else {
-    const sudo = which('sudo')
+    const sudo = environmentCommands(config, ['sudo'])[0] || null
     if (!sudo) throw new Error('this needs root (no sudo found); ' + manualCommandFor(id))
     await managed(sudo, ['-n', 'apt-get', 'install', '-y', spec.apt])
   }
@@ -1385,12 +1458,10 @@ async function installGhidraInto(config, job) {
 
 const AUTO_INSTALLABLE = new Set(['cli', 'coding-agent', 'ghidra', 'chromium', 'java', 'gdb'])
 
-function startEnvJobById(config, id) {
+async function startEnvJobById(config, id) {
   if (!AUTO_INSTALLABLE.has(id)) return null
-  if (id === 'cli') return startEnvJob(config, 'cli', (job) => installCliInto(config, job, { version: 'latest' }))
-  if (id === 'coding-agent') return startEnvJob(config, 'coding-agent', (job) => installCodingAgentInto(config, job))
-  if (id === 'ghidra') return startEnvJob(config, 'ghidra', (job) => installGhidraInto(config, job))
-  return startEnvJob(config, id, (job) => installPackageInto(config, job, id))
+  const { startDeployment } = await import('../lib/environment.js')
+  return startDeployment(config, { ids: [id] })
 }
 
 ﻿async function envReport(config = {}) {
@@ -1406,7 +1477,7 @@ function startEnvJobById(config, id) {
   const envValues = readEnvFile(config)
   const cliOverride = envValues.CRAFT_ANYTHING_CLI || null
   const agent = which('claude') || which('claude.cmd')
-  const npm = which('npm') || which('npm.cmd') || which('npm.exe')
+  const npm = environmentCommands(config, ['npm'])[0] || null
   const ghidra = findEngine('ghidra')
   const ghidraFound = foundOf('ghidra')
   const chromiumFound = foundOf('chromium')
@@ -1487,8 +1558,8 @@ function startEnvJobById(config, id) {
     plugin: { version: pluginVersion(), packageDir: PACKAGE_DIR },
     engineStore: data && data.engine_store ? String(data.engine_store) : null,
     deepMode: data && data.deep_mode ? data.deep_mode : null,
-    jobs: envJobsSnapshot(),
-    checks,
+    jobs: await envJobsSnapshot(config),
+    checks: await inspectHostEnvironment(config).then((report) => checks.map((check) => ({ ...check, ...report.checks.find((item) => item.id === check.id), label: check.label }))),
   }
 }
 
@@ -1533,23 +1604,22 @@ function envRouteHandler(getSettings) {
       }
       if (action === 'install') {
         const id = body && typeof body.id === 'string' ? body.id : ''
-        const job = id ? startEnvJobById(settings, id) : null
+        const job = id ? await startEnvJobById(settings, id) : null
         if (!job) {
           send(400, { ok: false, error: `no automatic install for "${id}"; use the command shown on the page` })
           return
         }
-        send(200, { ok: true, started: [job.id], jobs: envJobsSnapshot() })
+        send(200, { ok: true, started: [id], jobs: await envJobsSnapshot(settings) })
         return
       }
       if (action === 'fix-all') {
         const report = await envReport(settings)
         const wanted = report.checks.filter((check) => check.auto && check.state !== 'ok').map((check) => check.id)
-        const started = []
-        for (const id of wanted) {
-          const job = startEnvJobById(settings, id)
-          if (job) started.push(job.id)
+        if (wanted.length) {
+          const { startDeployment } = await import('../lib/environment.js')
+          startDeployment(settings, { ids: wanted })
         }
-        send(200, { ok: true, started, jobs: envJobsSnapshot() })
+        send(200, { ok: true, started: wanted, jobs: await envJobsSnapshot(settings) })
         return
       }
       send(400, { ok: false, error: 'body must be {"action":"install","id":"..."} or {"action":"fix-all"}' })

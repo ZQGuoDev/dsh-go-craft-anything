@@ -26,6 +26,8 @@ apt-get install -y git curl ca-certificates tar unzip
 
 ## 2. 选择安装方式
 
+当前版本为 0.6.1-mobile.2，包含自动环境检测与确认式依赖部署。可以使用固定 GitHub 标签或 Release 源码包安装。
+
 ### 本地 Git 仓库
 
 从本移动分支的发布仓库安装：
@@ -34,7 +36,7 @@ apt-get install -y git curl ca-certificates tar unzip
 PLUGIN_DIR="${DSH_HOME:-$HOME/.dsh}/dsh-go/plugins/local-craft-anything"
 mkdir -p "$(dirname "$PLUGIN_DIR")"
 git clone https://github.com/ZQGuoDev/dsh-go-craft-anything.git "$PLUGIN_DIR"
-git -C "$PLUGIN_DIR" checkout v0.6.1-mobile.1
+git -C "$PLUGIN_DIR" checkout v0.6.1-mobile.2
 dsh plugin --profile web add "$PLUGIN_DIR"
 ```
 
@@ -45,7 +47,7 @@ dsh plugin --profile web add "$PLUGIN_DIR"
 ### GitHub 包地址
 
 ```bash
-dsh plugin --profile web add github:ZQGuoDev/dsh-go-craft-anything#v0.6.1-mobile.1
+dsh plugin --profile web add github:ZQGuoDev/dsh-go-craft-anything#v0.6.1-mobile.2
 ```
 
 需要 Git、pnpm 可访问 GitHub。此路径与本地克隆方式二选一，不要重复装两份相同插件。
@@ -73,9 +75,15 @@ dsh plugin --profile web add "$PLUGIN_DIR"
 
 不建议手写 profile 的依赖和补丁文件；安装 / 移除交给 `dsh plugin`。
 
-## 4. 安装 CLI
+## 4. 检测与部署环境
 
-推荐让 AI 调用：
+插件首次加载自动检查本机依赖。打开「Craft 面板 → 环境依赖 / 部署」，点「一键部署」，核对缺失清单，再点「确认部署」；也可以「暂不部署」。确认前不会自动安装，已有可用环境会跳过。部署在本机后台串行运行，面板显示结果与有限日志；关闭面板后继续，重启引擎会中断任务。再次打开后重新检测即可复用已完成部分。
+
+不兼容或需额外配置的依赖显示手动处理。插件本身运行所需的 Node / DSH 和原生桥由宿主提供，不在包管理器 postinstall 中部署系统环境。
+
+### 手动安装 CLI
+
+也可让 AI 调用：
 
 ```text
 craft_install {"version":"v0.6.1"}

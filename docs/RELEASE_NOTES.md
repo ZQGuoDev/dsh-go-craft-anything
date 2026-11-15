@@ -1,32 +1,38 @@
-## dsh-go 原生 Craft 面板首个发布候选
+## Craft 环境自动检测与确认式一键部署
 
-版本：0.6.1-mobile.1。基于 Fanqi89/dsh-craft-anything 0.6.1（MIT）制作，面向 Android 上 dsh-go 的 Ubuntu / proot 本机引擎。CLI 来自 storytold/craft-anything，需独立安装。
+版本：0.6.1-mobile.2。面向 Android 上 dsh-go 的 Ubuntu / proot 本机引擎。
 
 ### 新增
 
-- 聊天页「切换模式」「Craft 面板」胶囊和本机模式 / CLI 状态条。
-- 对话详情、全部功能及支持插槽的加号面板入口。
-- CLI 路径 / 版本、CPU 架构、模式、桥状态、白名单、工具数量、引擎与编码后端探测。
-- 刷新 / 完整检测、净室 / 深度、开桥 / 关桥、仅核心 / 全部白名单及复制常用命令。
-- 保留 craft_status、craft_cli、craft_install、craft_mode、craft_bridge 和 MCP 接入。
-- 完整中文安装、使用、依赖、排障、配置、隐私和发布文档。
+- 插件加载后自动检查环境，在状态条和面板提示需要处理的依赖。
+- 新增「Craft 环境部署」原生面板，显示可复用、缺少或需手动配置的依赖。
+- 点「一键部署」生成缺失清单，用户确认后才下载和安装；「暂不部署」不会启动任务。
+- 复用已检测到可运行的 CLI、DSH / Codex / Claude 等编码智能体、Java 与 GDB；每项安装前复查，安装后验证。
+- 后台串行部署、同安装根互斥、有限进度日志；失败停止后续项，重试可复用已完成部分。
+- 确认清单绑定当前会话，5 分钟有效，重新检测后失效；重复点按不重复启动。
 
-### 安装
+### 安装与更新
+
+在 dsh-go 的 Ubuntu 环境执行：
 
 ```bash
-dsh plugin --profile web add github:ZQGuoDev/dsh-go-craft-anything#v0.6.1-mobile.1
+dsh plugin --profile web add github:ZQGuoDev/dsh-go-craft-anything#v0.6.1-mobile.2
 ```
 
-也可按 README 将源码克隆到 Ubuntu 的保留目录，再使用本地路径安装。需要时在 App「引擎」页重启。
+在 App「引擎」页重启一次。进入「Craft 面板 → 环境依赖 / 部署 → 一键部署」，核对清单后点「确认部署」。也可解压附件源码到 Ubuntu 保留目录，再用本地路径安装。
 
-装好插件后让 AI 调用 craft_install 安装 CLI，再运行 craft_status 与 doctor。建议首次固定已验证 CLI v0.6.1。
+### 验证
 
-### 验证与限制
+- 原生适配、确认交互与环境部署：23 / 23 项测试通过。
+- CLI 安装器离线回归：12 / 12 通过。
+- MCP 桥回归：41 项通过；布尔子 schema 回归：7 项通过。
+- dsh-go 检查器：两面板、三个入口、两种语言，共 12 组视图通过。
+- 真实只读检测复用了本机已有 CLI、DSH 与 Java；未在真实系统执行缺失依赖安装，未逐项点按实机 App。
 
-本机有 Android Ubuntu 24.04 proot / ARM64 的 CLI 0.6.1、真实 MCP、DSH Local 最小 rebuild 和 Ghidra 12.2 headless / 反编译集成记录；外部依赖不随源码分发。发布副本检查详情见 docs/VERIFICATION.md。
+### 兼容范围
 
-模式和桥设置是全主机共享；“全部工具”仅放开白名单，不自动加载所有工具集或安装引擎。切模式会替换 CLI 子进程，建议任务空闲时操作。
+Ubuntu/proot 的 Chromium 和 ARM64 Ghidra 等无法自动保证兼容的项显示手动处理。Ghidra 自动安装器可能同时下载 Java，本版本不将其加入自动清单。智能体版本检测不代表已登录或模型配置完成。
 
-没有移植桌面一键补齐依赖、网页插件更新和自动重启按钮；内部网页更新器仍指向上游，不作为手机更新方式。其他手机型号、浏览器 / ADB / JADX 等引擎和桌面交互不在本次全面验证范围。
+首次加载仅做检测，不在 npm / pnpm 安装脚本中安装系统软件；Node、DSH 和原生桥由宿主提供。关闭面板后已确认部署继续，重启引擎会中断任务，之后可重新检测。外部 CLI 和引擎不随插件源码分发。
 
-保留上游 MIT 许可和来源。详见 README、NOTICE.md 与 SECURITY.md。
+附件包含完整源码、相对于 d0830d4 的功能补丁和 SHA256 校验文件。保留上游 MIT 许可与归属，详见仓库 README、NOTICE.md、SECURITY.md 和 docs/VERIFICATION.md。

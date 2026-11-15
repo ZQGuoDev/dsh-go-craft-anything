@@ -1,15 +1,22 @@
 {
   "name": "local-craft-anything",
-  "version": "0.6.1-mobile.1",
+  "version": "0.6.1-mobile.2",
   "private": true,
   "type": "module",
   "description": "Craft Anything 的 dsh-go 手机原生适配：Craft 面板、净室/深度切换、状态条、MCP 桥及本地 CLI 工具。",
   "license": "MIT",
   "author": "fanqi",
-  "contributors": ["ZQGuoDev (dsh-go mobile adaptation and distribution)"],
-  "repository": {"type":"git","url":"git+https://github.com/ZQGuoDev/dsh-go-craft-anything.git"},
+  "contributors": [
+    "ZQGuoDev (dsh-go mobile adaptation and distribution)"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ZQGuoDev/dsh-go-craft-anything.git"
+  },
   "homepage": "https://github.com/ZQGuoDev/dsh-go-craft-anything#readme",
-  "bugs": {"url":"https://github.com/ZQGuoDev/dsh-go-craft-anything/issues"},
+  "bugs": {
+    "url": "https://github.com/ZQGuoDev/dsh-go-craft-anything/issues"
+  },
   "x-upstream": {
     "repository": "https://github.com/Fanqi89/dsh-craft-anything",
     "version": "0.6.1",
@@ -60,7 +67,9 @@
     "NOTICE.md",
     "SECURITY.md",
     "CONTRIBUTING.md",
-    "tests/mobile.test.mjs"
+    "tests/mobile.test.mjs",
+    "tests/setup.test.mjs",
+    "tests/environment.test.mjs"
   ],
   "peerDependencies": {
     "@deepseek-ai/dsh-mcp-client": ">=0.2.0-rc.2"
@@ -123,6 +132,19 @@
             "en": "Craft Status"
           },
           "icon": "tool",
+          "placement": [
+            "session.tab",
+            "features",
+            "chat.panel"
+          ]
+        },
+        {
+          "id": "craft-setup",
+          "title": {
+            "zh": "Craft 环境部署",
+            "en": "Craft Setup"
+          },
+          "icon": "download",
           "placement": [
             "session.tab",
             "features",

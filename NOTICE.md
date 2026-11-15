@@ -12,7 +12,7 @@
 
 ## 手机适配与发布整理
 
-手机适配包名 `local-craft-anything`，版本 `0.6.1-mobile.1`。主要新增 / 调整：
+手机适配包名 `local-craft-anything`，版本 `0.6.1-mobile.2`。主要新增 / 调整：
 
 - `lib/index.js` 组合 host 和原生桥；`lib/mobile.js` 提供原生面板与动作。
 - `dshGo` 清单、独立 `manifest-mobile.json` 和 mobile 回归测试。
