@@ -19,7 +19,7 @@
 - 以手机为首页的完整中文文档，区分源码、CLI、引擎和本机依赖验证。
 - 发布副本统一 package / dsh.plugin 的版本和移动 id；删除指向上游的发行仓库元数据，来源单独保留。
 - 补充隐私忽略规则和 GitHub issue 模板；收录本机 Ghidra ARM64 native 构建命令。
-- 旧 PowerShell 发布脚本增加默认禁用保护，避免误发到上游；手机发布按新的 RELEASING 流程手动执行。
+- 旧 PowerShell 发布脚本增加默认禁用保护，避免误发到上游。
 
 手机适配及文档按 MIT 提供。移动分支发布者为 [qingyunqingtong](https://github.com/qingyunqingtong)，仓库为 [dsh-go-craft-anything](https://github.com/qingyunqingtong/dsh-go-craft-anything)。保留上游作者 fanqi 的归属和 MIT 版权声明。
 

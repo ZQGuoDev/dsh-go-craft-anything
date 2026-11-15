@@ -10,7 +10,7 @@
 #   -SkipPush           validate + tag locally only
 #   -Message <text>     annotated tag message (default: "dsh-craft-anything vX.Y.Z")
 #
-# Rules (see RELEASING.md): version numbers are never reused, tags never move and old
+# Upstream rules (see docs/upstream/RELEASING.md): version numbers are never reused, tags never move and old
 # releases are never deleted. The script refuses to continue when anything disagrees.
 
 [CmdletBinding()]
@@ -22,8 +22,8 @@ param(
 )
 
 # Mobile source distributions do not publish through the upstream desktop script.
-# Follow RELEASING.md after configuring your own GitHub repository.
-Write-Error 'Disabled in the dsh-go mobile source release. Follow RELEASING.md; this archived workflow targets the upstream desktop repository.'
+# This archived workflow targets the upstream desktop repository.
+Write-Error 'Disabled in the dsh-go mobile source release; this archived workflow targets the upstream desktop repository.'
 exit 1
 
 $ErrorActionPreference = 'Stop'

@@ -146,7 +146,6 @@ Chromium、ADB、JADX、调试器、桌面 UI 和所有手机型号的兼容性�
 - [配置、目录和架构](docs/CONFIGURATION.md)
 - [排障与常见问题](docs/TROUBLESHOOTING.md)
 - [测试范围和验证记录](docs/VERIFICATION.md)
-- [GitHub 发布流程、仓库简介和 Release 文案](RELEASING.md)
 - [安全与隐私](SECURITY.md) · [贡献方式](CONTRIBUTING.md) · [更新日志](CHANGELOG.md)
 - [来源及许可说明](NOTICE.md) · [MIT 许可证](LICENSE)
 

@@ -43,7 +43,6 @@
     "locale/*.json",
     "icon.svg",
     "README.md",
-    "RELEASING.md",
     "CHANGELOG.md",
     "LICENSE",
     "scripts/install-cli.ps1",
