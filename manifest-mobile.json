@@ -1,0 +1,21 @@
+{
+  "v": 1,
+  "title": { "zh": "Craft 本机助手", "en": "Craft Local" },
+  "icon": "tool",
+  "wants": [],
+  "contributes": {
+    "composer.actions": [
+      { "id": "toggle-mode", "label": { "zh": "切换模式", "en": "Mode" }, "icon": "repeat" },
+      { "id": "open-craft", "label": { "zh": "Craft 面板", "en": "Craft" }, "icon": "panel", "effect": { "type": "open", "page": "panel:craft-status" } }
+    ],
+    "composer.strip": [
+      { "id": "craft-strip", "icon": "tool", "text": "Craft 本机状态", "panel": "craft-status" }
+    ],
+    "panels": [
+      { "id": "craft-status", "title": { "zh": "Craft 本机状态", "en": "Craft Status" }, "icon": "tool", "placement": ["session.tab", "features", "chat.panel"] }
+    ],
+    "composer.tools": [
+      { "id": "craft-tool-panel", "label": { "zh": "Craft", "en": "Craft" }, "icon": "tool", "panel": "craft-status" }
+    ]
+  }
+}

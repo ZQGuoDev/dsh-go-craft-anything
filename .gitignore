@@ -1,0 +1,32 @@
+node_modules/
+*.log
+.DS_Store
+Thumbs.db
+
+# Local credentials and runtime state (not plugin source)
+.env
+.env.*
+!.env.example
+http.token
+env.json
+mode.json
+bridge.json
+mcp.state.json
+mcp.restart
+update.state.json
+restart.pending.json
+plugins-data/
+downloads/
+CraftAnythingData/
+*.cany/
+*.gpr
+*.rep/
+*.pem
+*.key
+
+# Generated archives and temporary outputs
+*.zip
+*.tar.gz
+*.tgz
+coverage/
+.tmp/

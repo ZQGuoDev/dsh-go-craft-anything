@@ -1,0 +1,51 @@
+[
+  {
+    "command": [
+      "node",
+      "--test",
+      "tests/mobile.test.mjs"
+    ],
+    "exitCode": 0
+  },
+  {
+    "command": [
+      "node",
+      "/root/.dsh/skills/dsh-go-plugin/kit/bin/check.mjs",
+      "/sdcard/Download/DSH-Go/dsh-go-craft-anything-release",
+      "--load"
+    ],
+    "exitCode": 0
+  },
+  {
+    "command": [
+      "node",
+      "tests/bridge/run.cjs"
+    ],
+    "exitCode": 0
+  },
+  {
+    "command": [
+      "node",
+      "tests/bridge/bool-schema.mjs"
+    ],
+    "exitCode": 0
+  },
+  {
+    "command": [
+      "node",
+      "tests/install-cli/run.cjs"
+    ],
+    "exitCode": 0,
+    "assertions": 12,
+    "note": "After correcting Linux-host test output assumption; rerun 12 passed, 0 failed."
+  },
+  {
+    "command": [
+      "static-check",
+      "all-js-json-manifests-mobile-doc-links-and-secret-patterns"
+    ],
+    "exitCode": 0,
+    "javascriptFiles": 17,
+    "jsonFiles": 6
+  }
+]

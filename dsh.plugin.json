@@ -1,0 +1,31 @@
+{
+  "id": "local-craft-anything",
+  "version": "0.6.1-mobile.1",
+  "description": "Craft Anything 的 dsh-go 手机原生适配：Craft 面板、模式切换、状态条和 MCP 桥；CLI 与可选分析引擎需单独安装。",
+  "engines": {
+    "dsh": ">=0.2.1-rc.2"
+  },
+  "contributes": {
+    "tools": [
+      "craft_status",
+      "craft_cli",
+      "craft_install",
+      "craft_mode",
+      "craft_bridge"
+    ],
+    "mcp": [
+      "craft"
+    ],
+    "commands": [],
+    "skills": []
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "craft-anything",
+    "artcraft",
+    "mcp",
+    "reverse-engineering"
+  ]
+}

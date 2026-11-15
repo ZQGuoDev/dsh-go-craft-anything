@@ -1,0 +1,147 @@
+{
+  "name": "local-craft-anything",
+  "version": "0.6.1-mobile.1",
+  "private": true,
+  "type": "module",
+  "description": "Craft Anything 的 dsh-go 手机原生适配：Craft 面板、净室/深度切换、状态条、MCP 桥及本地 CLI 工具。",
+  "license": "MIT",
+  "author": "fanqi",
+  "contributors": ["qingyunqingtong (dsh-go mobile adaptation and distribution)"],
+  "repository": {"type":"git","url":"git+https://github.com/qingyunqingtong/dsh-go-craft-anything.git"},
+  "homepage": "https://github.com/qingyunqingtong/dsh-go-craft-anything#readme",
+  "bugs": {"url":"https://github.com/qingyunqingtong/dsh-go-craft-anything/issues"},
+  "x-upstream": {
+    "repository": "https://github.com/Fanqi89/dsh-craft-anything",
+    "version": "0.6.1",
+    "referenceMirror": "https://github.com/hbsyzstq/dsh-craft-anything"
+  },
+  "icon": "./icon.svg",
+  "engines": {
+    "dsh": ">=0.2.1-rc.2"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "craft-anything",
+    "artcraft",
+    "reverse-engineering",
+    "mcp"
+  ],
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "host/index.js",
+    "client.js",
+    "cordis.patch.yml",
+    "dsh.plugin.json",
+    "locale/*.json",
+    "icon.svg",
+    "README.md",
+    "RELEASING.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    "scripts/install-cli.ps1",
+    "scripts/release.ps1",
+    "scripts/install-cli.mjs",
+    "scripts/mcp-bridge.cjs",
+    "scripts/mirrors.mjs",
+    "scripts/restart-dsh.mjs",
+    "scripts/build-ghidra-arm64.sh",
+    "host/update.mjs",
+    "lib",
+    "manifest-mobile.json",
+    "README.mobile.md",
+    "docs",
+    "NOTICE.md",
+    "SECURITY.md",
+    "CONTRIBUTING.md",
+    "tests/mobile.test.mjs"
+  ],
+  "peerDependencies": {
+    "@deepseek-ai/dsh-mcp-client": ">=0.2.0-rc.2"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/dsh-mcp-client": {
+      "optional": true
+    }
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "main": "lib/index.js",
+  "dshGo": {
+    "v": 1,
+    "title": {
+      "zh": "Craft 本机助手",
+      "en": "Craft Local"
+    },
+    "icon": "tool",
+    "wants": [],
+    "contributes": {
+      "composer.actions": [
+        {
+          "id": "toggle-mode",
+          "label": {
+            "zh": "切换模式",
+            "en": "Mode"
+          },
+          "icon": "repeat"
+        },
+        {
+          "id": "open-craft",
+          "label": {
+            "zh": "Craft 面板",
+            "en": "Craft"
+          },
+          "icon": "panel",
+          "effect": {
+            "type": "open",
+            "page": "panel:craft-status"
+          }
+        }
+      ],
+      "composer.strip": [
+        {
+          "id": "craft-strip",
+          "icon": "tool",
+          "text": "Craft 本机状态",
+          "panel": "craft-status"
+        }
+      ],
+      "panels": [
+        {
+          "id": "craft-status",
+          "title": {
+            "zh": "Craft 本机状态",
+            "en": "Craft Status"
+          },
+          "icon": "tool",
+          "placement": [
+            "session.tab",
+            "features",
+            "chat.panel"
+          ]
+        }
+      ],
+      "composer.tools": [
+        {
+          "id": "craft-tool-panel",
+          "label": {
+            "zh": "Craft",
+            "en": "Craft"
+          },
+          "icon": "tool",
+          "panel": "craft-status"
+        }
+      ]
+    }
+  }
+}

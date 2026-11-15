@@ -1,0 +1,28 @@
+# dsh-go 手机原生适配
+
+基于 [Fanqi89/dsh-craft-anything](https://github.com/Fanqi89/dsh-craft-anything)（MIT），保留上游 host 和 scripts。本适配只增加 dsh-go 原生入口、状态条与面板；原有工具由 host 注册。
+
+## 在哪里看
+
+- 聊天输入框上方：“切换模式”胶囊在净室 / 深度之间切换；“Craft 面板”打开本机状态页。
+- 输入框上方状态条显示当前模式与 CLI 是否安装，点它也会打开面板。
+- 输入框加号工具面板中的 “Craft”；对话详情“插件”页签、全部功能也可进入。
+
+## 面板能做什么
+
+查看 CLI 安装状态、实际路径和版本、手机运行架构、实测可见工具数与 CLI 能力工具数、引擎检测、模式与桥状态。未知数量显示“尚未报告 / 尚未检测”，不会把上游默认数量当成实测数量。CLI 缺失时显示“未安装”。
+
+“刷新状态”复用 host 探针缓存；“完整检测”强制重跑版本与能力探针。打开期间每 60 秒复查本地状态，面板关闭后停止其订阅。
+
+模式和桥均为本主机全局设置，对所有会话生效。默认保持净室，安装和打开面板不会自动切换模式。“净室 / 深度”“开桥 / 关桥”“仅核心 / 全部工具”只在点按后执行。仅核心设置 `core_*` 白名单，全部工具清空白名单，两者保留桥当前开关状态。模式切换等待 host 异步结果，桥有在途调用时可能先排空调用；超时提示后可再次刷新核对。
+
+“复制常用命令”只复制 `craft_install`、`craft_status` 等工具调用提示。面板不自动发送、不自动安装 CLI。不申请剪贴板、输入草稿或消息读取权限，不读取 HTTP 鉴权令牌。
+
+## 开发验证
+
+```sh
+node --test tests/mobile.test.mjs
+node /root/.dsh/skills/dsh-go-plugin/kit/bin/check.mjs /root/.dsh/dsh-go/plugins/local-craft-anything --load
+```
+
+`manifest-mobile.json` 是独立 `dshGo` 清单，合并到包的 `package.json` → `dshGo`。包入口使用 `lib/index.js`，其调用上游 `apply` 后注入原生界面。修改 `lib/` 代码后在 App 的“引擎”页重启引擎生效；清单变更自动重读。
